@@ -37,7 +37,6 @@ module LZC #(
 			end else begin
 				case(state)
 					INPUT: begin
-						findOne = 0;
 						for (i = width-1; i >= 0; i = i - 1) begin
 							if (!findOne && DATA[i] == 0) begin
 								zero_cnt = zero_cnt + 1;
@@ -51,6 +50,7 @@ module LZC #(
 					OUTPUT: begin
 						OVALID = 1;
 						zero_cnt = 0;
+						findOne = 0;
 						state_next = INPUT;
 					end
 				endcase
@@ -68,7 +68,6 @@ module LZC #(
 						end else begin
 							state_next = INPUT;
 						end
-						findOne = 0;
 						for (i = width-1; i >= 0; i = i - 1) begin
 							if (!findOne && DATA[i] == 0) begin
 								zero_cnt = zero_cnt + 1;
@@ -80,6 +79,7 @@ module LZC #(
 					OUTPUT: begin
 						OVALID = 1;
 						zero_cnt = 0;
+						findOne = 0;
 						state_next = INPUT;
 					end
 				endcase

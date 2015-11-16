@@ -8,9 +8,7 @@ module stimulus;
 	wire [5:0] zeros;
 
 	reg debug_level;
-	reg [8*128-1:0] fsdbfile, test_input, test_golden;
-	reg [`WIDTH+1:0] test_input_vector;
-	reg [5:0] test_golden_vector;
+	reg [8*128-1:0] fsdbfile;
 
 	LZC #(
 		.width(`WIDTH),
@@ -46,21 +44,39 @@ module stimulus;
 		end
 	end
 
-	// test pattern
 	initial begin
-		if ($value$plusargs("pattern=%s", test_input));
-			$readmemb(test_input, test_input_vector);
-		if ($value$plusargs("golden=%s", test_golden));
-			$readmemb(test_golden, test_golden_vector);
-	end
+		#(cyc) rst_n = 0;
+		#(cyc*2);
+		#(cyc) rst_n = 1;
 
-	// apply pattern task
-	task apply_pattern;
-		output [5:0] result;
-		input [`WIDTH+1:0] pattern;
-		begin
-			{mode, ivalid, DATA} = pattern;
-		end
-	endtask
+		// sample test pattern
+		#(cyc)1_0_0000
+		#(CYC)0_0_1011
+		#(cyc)1_1_0000
+		#(cyc)1_0_0000
+		#(cyc)0_0_1101
+		#(cyc)0_0_0101
+		#(cyc)0_0_1101
+		#(cyc)0_1_0000
+		#(cyc)0_0_0100
+		#(cyc)0_1_0000
+		#(cyc)1_1_0000
+		#(cyc)1_0_0000
+		#(cyc)0_0_1001
+		#(cyc)1_0_0000
+		#(cyc)0_1_0001
+		#(cyc)0_1_0000
+		#(cyc)1_1_0000
+		#(cyc)1_0_0000
+		#(cyc)1_0_0000
+		#(cyc)1_1_0000
+		#(cyc)1_1_0000
+		#(cyc)1_1_0000
+		#(cyc)1_1_0000
+		#(cyc)1_0_0000
+		#(cyc)0_0_1000
+
+		$finish;
+	end
 
 endmodule

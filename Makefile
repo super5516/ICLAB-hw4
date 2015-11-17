@@ -19,6 +19,9 @@ endif
 ifneq ($(test_golden), '')
 	VLOGARG += +golden=$(test_golden)
 endif
+ifneq ('${debug_level}', '')
+	VLOGARG += +DEBUG=${debug_level}
+endif
 
 all::sim
 

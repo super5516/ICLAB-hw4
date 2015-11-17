@@ -8,7 +8,7 @@ module LZC #(
 	input wire IVALID,
 	input wire [width-1:0] DATA,
 	output reg OVALID,
-	output reg [5:0] ZEROS
+	output reg [8:0] ZEROS
 );
 
 	parameter INPUT = 1'b0;
@@ -16,8 +16,8 @@ module LZC #(
 
 	integer i;
 	reg state, state_next;
-	reg findOne;
-	reg [5:0] zero_cnt, zero_next;
+	reg findOne, flag;
+	reg [8:0] zero_cnt, zero_next;
 	reg [5:0] word_cnt, word_next, WORDS;
 	reg xor_value;
 
@@ -36,15 +36,21 @@ module LZC #(
 			word_cnt <= 0;
 			word_next <= 0;
 			WORDS <= 0;
+			i <= 0;
+			flag <= 0;
 		end	else begin
 			state <= state_next;
 			if (IVALID) begin
 				WORDS <= WORDS + word_next;
+			end
+			if (IVALID && (!findOne || flag)) begin
 				ZEROS <= ZEROS + zero_next;
+				flag <= 0;
 			end
 			if (state == OUTPUT && state_next == INPUT) begin
 				ZEROS <= zero_next;
 				WORDS <= 0;
+				findOne <= 0;
 			end
 		end
 	end
@@ -58,12 +64,13 @@ module LZC #(
 					zero_cnt = zero_cnt + 1;
 				end else begin
 					findOne = 1;
+					flag = 1;
 				end
 			end
+			i = 0;
 		end else begin
 			zero_cnt = 0;
 			word_cnt = 0;
-			findOne = 0;
 		end
 	end
 
@@ -99,8 +106,6 @@ module LZC #(
 			OUTPUT: begin
 				OVALID = 1;
 				zero_next = 0;
-				word_next = 0;
-				findOne = 0;
 				state_next = INPUT;
 			end
 		endcase

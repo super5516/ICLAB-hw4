@@ -4,23 +4,23 @@ SRC		= header.v \
 		  lzc_t.v
 WORD	= 0
 WIDTH	= 0
-VLOGARG	= +access+r +WORD=${WORD} +WIDTH=${WIDTH}
+VLOGARG	= +access+r +define+WORD=${WORD} +define+WIDTH=${WIDTH}
 TMPFILE	= *.log \
 		  verilog.key \
 		  nWaveLog
 DBFILE	= *.fsdb *.vcd *.bak
 RM		= -rm -rf
-ifneq ($(fsdbfile), '')
+ifneq ($(strip $(fsdbfile)), )
 	VLOGARG += +fsdbfile=$(fsdbfile)
 endif
-ifneq ($(test_input), '')
-	VLOGARG += +pattern=$(test_input)
+ifneq ($(strip $(pattern)), )
+	VLOGARG += +pattern=$(pattern)
 endif
-ifneq ($(test_golden), '')
-	VLOGARG += +golden=$(test_golden)
+ifneq ($(strip $(golden)), )
+	VLOGARG += +golden=$(golden)
 endif
-ifneq ('${debug_level}', '')
-	VLOGARG += +DEBUG=${debug_level}
+ifneq ($(strip ${DEBUG}), )
+	VLOGARG += +DEBUG=${DEBUG}
 endif
 
 all::sim

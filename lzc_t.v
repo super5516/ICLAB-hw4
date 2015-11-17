@@ -5,7 +5,14 @@ module stimulus;
 	reg clk, rst_n, mode, ivalid;
 	reg [`WIDTH-1:0] DATA;
 	wire ovalid;
-	wire [5:0] zeros;
+	wire [8:0] zeros;
+
+	reg debug_level;
+	reg [8*128-1:0] fsdbfile, inputfile, goldenfile;
+	reg [`WIDTH+1:0] input_vector[0:30000];
+	reg [8:0] golden_vector[0:30000];
+
+	integer i, j, error;
 
 	LZC #(
 		.width(`WIDTH),
@@ -22,48 +29,72 @@ module stimulus;
 
 	always #(cyc/2) clk = ~clk;
 
+	// fsdb filename
 	initial begin
-		$fsdbDumpfile("lzc.fsdb");
+		if ($value$plusargs("fsdbfile=%s", fsdbfile)) begin
+			$fsdbDumpfile(fsdbfile);
+		end else begin
+			$fsdbDumpfile("lzc.fsdb");
+		end
 		$fsdbDumpvars;
 	end
 
+	// debug mode
+	initial begin
+		if ($value$plusargs("DEBUG=%d", debug_level)) begin
+			if (debug_level == 1) begin
+				$monitor("clk=%d,OVALID=%b,ZEROS=%d", $time, ovalid, zeros);
+			end
+		end
+	end
+
+	// test pattern
+	initial begin
+		if ($value$plusargs("pattern=%s", inputfile)) begin
+			$readmemb(inputfile, input_vector);
+		end
+		if ($value$plusargs("golden=%s", goldenfile)) begin
+			$readmemb(goldenfile, golden_vector);
+		end
+	end
+
+	// testbench
 	initial begin
 		clk = 1;
 		rst_n = 1;
+		j = 0;
+		error = 0;
 		#(cyc);
 		#(delay) rst_n = 0;
 		#(cyc*4) rst_n = 1;
 
-		// sample test pattern
-		#(cyc) {mode, ivalid, DATA} = 6'b1_0_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_0_1011;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_0_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_0_1101;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_0_0101;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_0_1101;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_0_0100;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_0_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_0_1001;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_0_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_1_0001;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_0_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_0_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_1_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b1_0_0000;
-		#(cyc) {mode, ivalid, DATA} = 6'b0_0_1000;
+		for (i = 0; i < 30000; i = i + 1) begin
+			#(cyc) apply_pattern(input_vector[i]);
+		end
 
 		#(cyc*3);
 
+		$display("%d errors in %s", error, inputfile);
+
 		$finish;
 	end
+
+	// count error
+	always @(posedge clk) begin
+		if (ovalid) begin
+			if (zeros != golden_vector[j]) begin
+				error = error + 1;
+			end
+			j = j + 1;
+		end
+	end
+
+	// apply pattern task
+	task apply_pattern;
+		input [`WIDTH+1:0] pattern;
+		begin
+			{mode, ivalid, DATA} = pattern;
+		end
+	endtask
 
 endmodule

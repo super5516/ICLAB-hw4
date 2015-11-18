@@ -17,60 +17,44 @@ module LZC #(
 	integer i;
 	reg state, state_next;
 	reg findOne, flag;
-	reg [8:0] zero_cnt, zero_next;
-	reg [5:0] word_cnt, word_next, WORDS;
-	reg xor_value;
-
-	always @* begin
-		xor_value = ^DATA;
-	end
+	reg [8:0] zero_cnt;
+	reg [5:0] WORDS;
 
 	always @(posedge CLK or negedge RST_N) begin
 		if (!RST_N) begin
 			state <= INPUT;
 			findOne <= 0;
 			zero_cnt <= 0;
-			zero_next <= 0;
 			ZEROS <= 0;
 			OVALID <= 0;
-			word_cnt <= 0;
-			word_next <= 0;
 			WORDS <= 0;
-			i <= 0;
 			flag <= 0;
 		end	else begin
 			state <= state_next;
 			if (IVALID) begin
-				WORDS <= WORDS + word_next;
-			end
-			if (IVALID && (!findOne || flag)) begin
-				ZEROS <= ZEROS + zero_next;
-				flag <= 0;
+				WORDS <= WORDS + 1;
+				ZEROS <= zero_cnt;
 			end
 			if (state == OUTPUT && state_next == INPUT) begin
-				ZEROS <= zero_next;
+				ZEROS <= 0;
 				WORDS <= 0;
-				findOne <= 0;
 			end
 		end
 	end
 
-	always @* begin
+	always @(posedge CLK) begin
 		if (IVALID) begin
-			zero_cnt = 0;
-			word_cnt = 1;
 			for (i = width-1; i >= 0; i = i - 1) begin
 				if (!findOne && DATA[i] == 0) begin
 					zero_cnt = zero_cnt + 1;
 				end else begin
 					findOne = 1;
-					flag = 1;
 				end
 			end
-			i = 0;
-		end else begin
+		end
+		if (state == OUTPUT && state_next == INPUT) begin
+			findOne = 0;
 			zero_cnt = 0;
-			word_cnt = 0;
 		end
 	end
 
@@ -78,34 +62,18 @@ module LZC #(
 		case (state)
 			INPUT: begin
 				OVALID = 0;
-				zero_next = zero_cnt;
-				if (MODE) begin
-					if (!IVALID || (xor_value !== 1 && xor_value !== 0)) begin
-						state_next = INPUT;
-					end else begin
-						word_next = word_cnt;
-						if (findOne || WORDS == word - 1) begin
-							state_next = OUTPUT;
-						end else begin
-							state_next = INPUT;
-						end
-					end
+				if (!IVALID) begin
+					state_next = INPUT;
 				end else begin
-					if (!IVALID || (xor_value !== 1 && xor_value !== 0)) begin
-						state_next = INPUT;
+					if ((MODE && findOne) || WORDS == word - 1) begin
+						state_next = OUTPUT;
 					end else begin
-						word_next = word_cnt;
-						if (WORDS == word - 1) begin
-							state_next = OUTPUT;
-						end else begin
-							state_next = INPUT;
-						end
+						state_next = INPUT;
 					end
 				end
 			end
 			OUTPUT: begin
 				OVALID = 1;
-				zero_next = 0;
 				state_next = INPUT;
 			end
 		endcase
